@@ -9,18 +9,18 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    
     protected $fillable = [
-        'name',
+        'nombre',
+        'apellido',
         'email',
+        'telefono',
         'password',
+        'rol_id',
+        'activo'
     ];
 
     /**
@@ -43,6 +43,33 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'activo' => 'boolean'
         ];
+    }
+
+    /// Relacion
+
+    /**
+     * Un usuario pertenece a un rol
+     */
+    public function rol()
+    {
+        return $this->belongsTo(Rol::class, 'rol_id');
+    }
+
+    /**
+     * Un usuario (mesero) tiene muchas órdenes
+     */
+    public function ordenes()
+    {
+        return $this->hasMany(Orden::class, 'usuario_id');
+    }
+
+    /**
+     * Un usuario (cajero) tiene muchas cajas
+     */
+    public function cajas()
+    {
+        return $this->hasMany(Caja::class, 'usuario_id');
     }
 }
