@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
 class User extends Authenticatable
 {
@@ -23,21 +24,12 @@ class User extends Authenticatable
         'activo'
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
+
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -47,27 +39,40 @@ class User extends Authenticatable
         ];
     }
 
+    /// JWT Metodos
+
+    //Devuelve el identificador que se almacenará en el sujeto del JWT.
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    //Devuelve una matriz de valores clave que contiene cualquier reclamo personalizado que se agregará al JWT.
+    public function getJWTCustomClaims()
+    {
+        return [
+            'nombre' => $this->nombre,
+            'apellido' => $this->apellido,
+            'email' => $this->email,
+            'rol' => $this->rol->nombre ?? null
+        ];
+    }
+
     /// Relacion
 
-    /**
-     * Un usuario pertenece a un rol
-     */
+    // Un usuario pertenece a un rol
     public function rol()
     {
         return $this->belongsTo(Rol::class, 'rol_id');
     }
 
-    /**
-     * Un usuario (mesero) tiene muchas órdenes
-     */
+    // Un usuario (mesero) tiene muchas ordenes
     public function ordenes()
     {
         return $this->hasMany(Orden::class, 'usuario_id');
     }
 
-    /**
-     * Un usuario (cajero) tiene muchas cajas
-     */
+    // Un usuario (cajero) tiene muchas cajas
     public function cajas()
     {
         return $this->hasMany(Caja::class, 'usuario_id');
