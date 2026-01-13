@@ -8,7 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject
 {
     
     use HasFactory, Notifiable;
@@ -54,7 +54,6 @@ class User extends Authenticatable
             'nombre' => $this->nombre,
             'apellido' => $this->apellido,
             'email' => $this->email,
-            'rol' => $this->rol->nombre ?? null
         ];
     }
 

@@ -117,28 +117,28 @@ class AuthController extends Controller
     }
 
     // Formatear respuesta con el token
-    protected function respondWithToken($token)
-    {
-        $user = Auth::guard('api')->user();
-        
-        // Cargar la relación usando with en vez de load
-        $user = User::with('rol')->find($user->id);
+protected function respondWithToken($token)
+{
+    $userId = Auth::guard('api')->id();
+    
+    // Cargar la relación
+    $user = User::with('rol')->find($userId);
 
-        return response()->json([
-            'success' => true,
-            'access_token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => config('jwt.ttl') * 60, 
-            'user' => [
-                'id' => $user->id,
-                'nombre' => $user->nombre,
-                'apellido' => $user->apellido,
-                'email' => $user->email,
-                'rol' => [
-                    'id' => $user->rol->id,
-                    'nombre' => $user->rol->nombre
-                ]
-            ]
-        ]);
-    }
+    return response()->json([
+        'success' => true,
+        'access_token' => $token,
+        'token_type' => 'bearer',
+        'expires_in' => config('jwt.ttl') * 60, 
+        'user' => [
+            'id' => $user->id,
+            'nombre' => $user->nombre,
+            'apellido' => $user->apellido,
+            'email' => $user->email,
+            'rol' => $user->rol ? [  
+                'id' => $user->rol->id,
+                'nombre' => $user->rol->nombre
+            ] : null
+        ]
+    ]);
+}
 }
