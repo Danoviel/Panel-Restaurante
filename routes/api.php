@@ -5,6 +5,7 @@ use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CategoriaController;
 use App\Http\Controllers\API\ProductoController;
 use App\Http\Controllers\API\MesaController;
+use App\Http\Controllers\API\OrdenController;
 
 
 
@@ -60,5 +61,17 @@ Route::middleware('auth:api')->group(function () {
         Route::put('{id}', [MesaController::class, 'update']);
         Route::delete('{id}', [MesaController::class, 'destroy']);
         Route::patch('{id}/estado', [MesaController::class, 'cambiarEstado']);
+    });
+
+    // Órdenes
+    Route::prefix('ordenes')->group(function () {
+        Route::get('/', [OrdenController::class, 'index']);
+        Route::get('activas', [OrdenController::class, 'activas']);
+        Route::get('cocina', [OrdenController::class, 'cocina']);
+        Route::get('{id}', [OrdenController::class, 'show']);
+        Route::post('/', [OrdenController::class, 'store']);
+        Route::post('{id}/productos', [OrdenController::class, 'agregarProductos']);
+        Route::patch('{id}/estado', [OrdenController::class, 'cambiarEstado']);
+        Route::post('{id}/cancelar', [OrdenController::class, 'cancelar']);
     });
 });
