@@ -6,6 +6,8 @@ use App\Http\Controllers\API\CategoriaController;
 use App\Http\Controllers\API\ProductoController;
 use App\Http\Controllers\API\MesaController;
 use App\Http\Controllers\API\OrdenController;
+use App\Http\Controllers\API\ComprobanteController;
+use App\Http\Controllers\API\CajaController;
 
 
 
@@ -29,49 +31,84 @@ Route::middleware('auth:api')->group(function () {
         Route::get('me', [AuthController::class, 'me']);    
     });
 
-    // Categorías
+    // Categorías(Solo Administrador puede crear, actualizar y eliminar)
     Route::prefix('categorias')->group(function () {
         Route::get('/', [CategoriaController::class, 'index']);
         Route::get('con-productos', [CategoriaController::class, 'conProductos']);
         Route::get('{id}', [CategoriaController::class, 'show']);
-        Route::post('/', [CategoriaController::class, 'store']);
-        Route::put('{id}', [CategoriaController::class, 'update']);
-        Route::delete('{id}', [CategoriaController::class, 'destroy']);
+        // Solo Administrador
+        Route::middleware('role:Administrador')->group(function () {
+            Route::post('/', [CategoriaController::class, 'store']);
+            Route::put('{id}', [CategoriaController::class, 'update']);
+            Route::delete('{id}', [CategoriaController::class, 'destroy']);
+        });
     });
 
-    // Productos
+    // Productos(Administrador y Cajero pueden crear, actualizar y eliminar)
     Route::prefix('productos')->group(function () {
         Route::get('/', [ProductoController::class, 'index']);
         Route::get('stock-bajo', [ProductoController::class, 'stockBajo']);
         Route::get('{id}', [ProductoController::class, 'show']);
-        Route::post('/', [ProductoController::class, 'store']);
-        Route::put('{id}', [ProductoController::class, 'update']);
-        Route::delete('{id}', [ProductoController::class, 'destroy']);
-        Route::patch('{id}/stock', [ProductoController::class, 'actualizarStock']);
+        // Admin y Cajero
+        Route::middleware('role:Administrador,Cajero')->group(function () {
+            Route::post('/', [ProductoController::class, 'store']);
+            Route::put('{id}', [ProductoController::class, 'update']);
+            Route::delete('{id}', [ProductoController::class, 'destroy']);
+            Route::patch('{id}/stock', [ProductoController::class, 'actualizarStock']);
+        });
     });
 
-    // Mesas
+    // Mesas(Administrador y Mozo pueden gestionar mesas)
     Route::prefix('mesas')->group(function () {
         Route::get('/', [MesaController::class, 'index']);
         Route::get('libres', [MesaController::class, 'libres']);
         Route::get('ocupadas', [MesaController::class, 'ocupadas']);
         Route::get('resumen', [MesaController::class, 'resumen']);
         Route::get('{id}', [MesaController::class, 'show']);
-        Route::post('/', [MesaController::class, 'store']);
-        Route::put('{id}', [MesaController::class, 'update']);
-        Route::delete('{id}', [MesaController::class, 'destroy']);
         Route::patch('{id}/estado', [MesaController::class, 'cambiarEstado']);
+        // Solo Admin puede crear/editar/eliminar mesas
+        Route::middleware('role:Administrador')->group(function () {
+            Route::post('/', [MesaController::class, 'store']);
+            Route::put('{id}', [MesaController::class, 'update']);
+            Route::delete('{id}', [MesaController::class, 'destroy']);
+        });
+       
     });
 
-    // Órdenes
+    // Órdenes(Mesero y Cajero pueden gestionar órdenes)
     Route::prefix('ordenes')->group(function () {
         Route::get('/', [OrdenController::class, 'index']);
         Route::get('activas', [OrdenController::class, 'activas']);
         Route::get('cocina', [OrdenController::class, 'cocina']);
         Route::get('{id}', [OrdenController::class, 'show']);
-        Route::post('/', [OrdenController::class, 'store']);
-        Route::post('{id}/productos', [OrdenController::class, 'agregarProductos']);
-        Route::patch('{id}/estado', [OrdenController::class, 'cambiarEstado']);
-        Route::post('{id}/cancelar', [OrdenController::class, 'cancelar']);
+        // Mesero y Cajero pueden crear y modificar
+        Route::middleware('role:Administrador,Mesero,Cajero')->group(function () {
+            Route::post('/', [OrdenController::class, 'store']);
+            Route::post('{id}/productos', [OrdenController::class, 'agregarProductos']);
+            Route::patch('{id}/estado', [OrdenController::class, 'cambiarEstado']);
+            Route::post('{id}/cancelar', [OrdenController::class, 'cancelar']);
+        });
+    });
+
+    // Comprobantes(Administrador y Cajero pueden gestionar comprobantes)
+    Route::prefix('comprobantes')->group(function () {
+        Route::middleware('role:Administrador,Cajero')->group(function () {
+            Route::get('/', [ComprobanteController::class, 'index']);
+            Route::get('resumen-dia', [ComprobanteController::class, 'resumenDia']);
+            Route::get('{id}', [ComprobanteController::class, 'show']);
+            Route::post('generar', [ComprobanteController::class, 'generar']);
+            Route::post('{id}/anular', [ComprobanteController::class, 'anular']);
+        });
+    });
+
+    // Caja(Solo Administrador y Cajero pueden gestionar la caja)
+    Route::prefix('caja')->group(function () {
+        Route::middleware('role:Administrador,Cajero')->group(function () {
+            Route::get('actual', [CajaController::class, 'actual']);
+            Route::get('historial', [CajaController::class, 'historial']);
+            Route::get('{id}', [CajaController::class, 'show']);
+            Route::post('abrir', [CajaController::class, 'abrir']);
+            Route::post('{id}/cerrar', [CajaController::class, 'cerrar']);
+        });
     });
 });
