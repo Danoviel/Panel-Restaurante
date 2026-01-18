@@ -11,13 +11,13 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductoController extends Controller
 {
-    //Listar tofos los productos activos
+    //Listar todos los productos
     public function index(Request $request)
     {
         try {
             $query = Producto::with('categoria')->where('activo', true);
 
-            // Filtrar por categoría si viene el parámetro
+            // Filtrar por categoría
             if ($request->has('categoria_id')) {
                 $query->where('categoria_id', $request->categoria_id);
             }
@@ -28,6 +28,16 @@ class ProductoController extends Controller
             }
 
             $productos = $query->orderBy('nombre', 'asc')->get();
+
+            // Agregar URL completa de la imagen
+            $productos->transform(function ($producto) {
+                if ($producto->imagen) {
+                    $producto->imagen_url = url('storage/' . $producto->imagen);
+                } else {
+                    $producto->imagen_url = null;
+                }
+                return $producto;
+            });
 
             return response()->json([
                 'success' => true,
@@ -42,6 +52,36 @@ class ProductoController extends Controller
         }
     }
 
+    //Obtener un producto por ID
+    public function show($id)
+    {
+        try {
+            $producto = Producto::with('categoria')->find($id);
+
+            if (!$producto) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Producto no encontrado'
+                ], 404);
+            }
+
+            // Agregar URL completa de la imagen
+            if ($producto->imagen) {
+                $producto->imagen_url = url('storage/' . $producto->imagen);
+            }
+
+            return response()->json([
+                'success' => true,
+                'producto' => $producto
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener producto',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     //Crear un nuevo producto
     public function store(Request $request)
@@ -54,7 +94,8 @@ class ProductoController extends Controller
                 'descripcion' => 'nullable|string',
                 'precio_venta' => 'required|numeric|min:0',
                 'tipo_producto' => 'required|in:preparado,comprado',
-                'activo' => 'nullable|boolean'
+                'activo' => 'nullable|boolean',
+                'imagen' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:2048' // Máx 2MB
             ];
 
             // Validaciones adicionales para productos comprados
@@ -75,6 +116,12 @@ class ProductoController extends Controller
                 ], 422);
             }
 
+            // Procesar imagen si existe
+            $imagenPath = null;
+            if ($request->hasFile('imagen')) {
+                $imagenPath = $this->guardarImagen($request->file('imagen'));
+            }
+
             // Crear producto
             $producto = Producto::create([
                 'categoria_id' => $request->categoria_id,
@@ -83,15 +130,21 @@ class ProductoController extends Controller
                 'precio_venta' => $request->precio_venta,
                 'tipo_producto' => $request->tipo_producto,
                 'activo' => $request->activo ?? true,
-                // Campos opcionales para productos comprados
-                'precio_compra' => $request->precio_compra,
-                'stock_actual' => $request->stock_actual,
-                'stock_minimo' => $request->stock_minimo,
-                'unidad_medida' => $request->unidad_medida,
-                'sku' => $request->sku,
+                'imagen' => $imagenPath,
+                // Campos para productos comprados
+                'precio_compra' => $request->tipo_producto === 'comprado' ? $request->precio_compra : null,
+                'stock_actual' => $request->tipo_producto === 'comprado' ? $request->stock_actual : null,
+                'stock_minimo' => $request->tipo_producto === 'comprado' ? $request->stock_minimo : null,
+                'unidad_medida' => $request->tipo_producto === 'comprado' ? $request->unidad_medida : null,
+                'sku' => $request->tipo_producto === 'comprado' ? $request->sku : null,
             ]);
 
             $producto->load('categoria');
+
+            // Agregar URL de imagen
+            if ($producto->imagen) {
+                $producto->imagen_url = url('storage/' . $producto->imagen);
+            }
 
             return response()->json([
                 'success' => true,
@@ -107,34 +160,6 @@ class ProductoController extends Controller
             ], 500);
         }
     }
-
-
-    //Obtener un producto por ID
-    public function show($id)
-    {
-        try {
-            $producto = Producto::with('categoria')->find($id);
-
-            if (!$producto) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Producto no encontrado'
-                ], 404);
-            }
-
-            return response()->json([
-                'success' => true,
-                'producto' => $producto
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener producto',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
 
     //Actualizar un producto existente
     public function update(Request $request, $id)
@@ -156,7 +181,8 @@ class ProductoController extends Controller
                 'descripcion' => 'nullable|string',
                 'precio_venta' => 'required|numeric|min:0',
                 'tipo_producto' => 'required|in:preparado,comprado',
-                'activo' => 'nullable|boolean'
+                'activo' => 'nullable|boolean',
+                'imagen' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:2048'
             ];
 
             // Validaciones adicionales para productos comprados
@@ -177,6 +203,16 @@ class ProductoController extends Controller
                 ], 422);
             }
 
+            // Procesar nueva imagen si existe
+            $imagenPath = $producto->imagen;
+            if ($request->hasFile('imagen')) {
+                // Eliminar imagen anterior
+                if ($producto->imagen) {
+                    Storage::disk('public')->delete($producto->imagen);
+                }
+                $imagenPath = $this->guardarImagen($request->file('imagen'));
+            }
+
             // Actualizar producto
             $producto->update([
                 'categoria_id' => $request->categoria_id,
@@ -185,14 +221,20 @@ class ProductoController extends Controller
                 'precio_venta' => $request->precio_venta,
                 'tipo_producto' => $request->tipo_producto,
                 'activo' => $request->activo ?? $producto->activo,
-                'precio_compra' => $request->precio_compra,
-                'stock_actual' => $request->stock_actual,
-                'stock_minimo' => $request->stock_minimo,
-                'unidad_medida' => $request->unidad_medida,
-                'sku' => $request->sku,
+                'imagen' => $imagenPath,
+                'precio_compra' => $request->tipo_producto === 'comprado' ? $request->precio_compra : null,
+                'stock_actual' => $request->tipo_producto === 'comprado' ? $request->stock_actual : null,
+                'stock_minimo' => $request->tipo_producto === 'comprado' ? $request->stock_minimo : null,
+                'unidad_medida' => $request->tipo_producto === 'comprado' ? $request->unidad_medida : null,
+                'sku' => $request->tipo_producto === 'comprado' ? $request->sku : null,
             ]);
 
             $producto->load('categoria');
+
+            // Agregar URL de imagen
+            if ($producto->imagen) {
+                $producto->imagen_url = url('storage/' . $producto->imagen);
+            }
 
             return response()->json([
                 'success' => true,
@@ -209,8 +251,39 @@ class ProductoController extends Controller
         }
     }
 
-    
-    //Eliminar un producto (lógica de desactivación)
+    // Eliminar imagen de un producto
+    public function eliminarImagen($id)
+    {
+        try {
+            $producto = Producto::find($id);
+
+            if (!$producto) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Producto no encontrado'
+                ], 404);
+            }
+
+            if ($producto->imagen) {
+                Storage::disk('public')->delete($producto->imagen);
+                $producto->update(['imagen' => null]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Imagen eliminada exitosamente'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar imagen',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    //Eliminar un producto (desactivar)
     public function destroy($id)
     {
         try {
@@ -227,7 +300,6 @@ class ProductoController extends Controller
             $ordenesCount = $producto->detalleOrdenes()->count();
 
             if ($ordenesCount > 0) {
-                // No eliminar, solo desactivar
                 $producto->update(['activo' => false]);
                 return response()->json([
                     'success' => true,
@@ -235,7 +307,7 @@ class ProductoController extends Controller
                 ]);
             }
 
-            // Si no tiene historial, marcar como inactivo
+            // Desactivar producto
             $producto->update(['activo' => false]);
 
             return response()->json([
@@ -252,8 +324,7 @@ class ProductoController extends Controller
         }
     }
 
-
-    //Obtener producto con bajo stock
+    //Obtener productos con stock bajo
     public function stockBajo()
     {
         try {
@@ -263,6 +334,14 @@ class ProductoController extends Controller
                 ->where('activo', true)
                 ->with('categoria')
                 ->get();
+
+            // Agregar URLs de imágenes
+            $productos->transform(function ($producto) {
+                if ($producto->imagen) {
+                    $producto->imagen_url = url('storage/' . $producto->imagen);
+                }
+                return $producto;
+            });
 
             return response()->json([
                 'success' => true,
@@ -278,8 +357,7 @@ class ProductoController extends Controller
         }
     }
 
-
-    //Actualizar stock de un producto comprado
+    //Actualizar stock de un producto
     public function actualizarStock(Request $request, $id)
     {
         try {
@@ -327,5 +405,17 @@ class ProductoController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    //Guardar imagen
+    private function guardarImagen($imagen)
+    {
+        $nombreOriginal = pathinfo($imagen->getClientOriginalName(), PATHINFO_FILENAME);
+        $extension = $imagen->getClientOriginalExtension();
+        $nombreArchivo = $nombreOriginal . '_' . time() . '.' . $extension;
+        
+        $path = $imagen->storeAs('productos', $nombreArchivo, 'public');
+        
+        return $path;
     }
 }

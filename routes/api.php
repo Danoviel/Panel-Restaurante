@@ -46,14 +46,15 @@ Route::middleware('auth:api')->group(function () {
 
     // Productos(Administrador y Cajero pueden crear, actualizar y eliminar)
     Route::prefix('productos')->group(function () {
-        Route::get('/', [ProductoController::class, 'index']);
+        Route::get('/', [ProductoController::class, 'index']);  
         Route::get('stock-bajo', [ProductoController::class, 'stockBajo']);
         Route::get('{id}', [ProductoController::class, 'show']);
         // Admin y Cajero
         Route::middleware('role:Administrador,Cajero')->group(function () {
             Route::post('/', [ProductoController::class, 'store']);
-            Route::put('{id}', [ProductoController::class, 'update']);
+            Route::post('{id}', [ProductoController::class, 'update']);
             Route::delete('{id}', [ProductoController::class, 'destroy']);
+            Route::delete('{id}/imagen', [ProductoController::class, 'eliminarImagen']);
             Route::patch('{id}/stock', [ProductoController::class, 'actualizarStock']);
         });
     });
