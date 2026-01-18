@@ -397,7 +397,7 @@ class ProductoController extends Controller
                 'message' => 'Stock actualizado exitosamente',
                 'producto' => $producto
             ]);
-
+                                                       
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -405,7 +405,7 @@ class ProductoController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-    }
+    }                                           
 
     //Guardar imagen
     private function guardarImagen($imagen)
