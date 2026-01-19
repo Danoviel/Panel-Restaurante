@@ -7,6 +7,7 @@ use App\Models\Comprobante;
 use App\Models\ConfiguracionNegocio;
 use App\Models\Orden;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -141,10 +142,11 @@ class ComprobanteController extends Controller
                 ], 400);
             }
 
-            // Obtener configuración del negocio
-            $config = ConfiguracionNegocio::first();
+            // Obtener configuración del negocio con bloqueo para evitar números duplicados
+            $config = ConfiguracionNegocio::lockForUpdate()->first();
 
             if (!$config) {
+                DB::rollBack();
                 return response()->json([
                     'success' => false,
                     'message' => 'No se ha configurado el negocio. Complete el wizard de configuración.'
@@ -152,11 +154,12 @@ class ComprobanteController extends Controller
             }
 
             // Determinar serie y número según el tipo
-            $serie = '';
-            $numero = 0;
+            $serie = null;
+            $numero = null;
 
             if ($request->tipo === 'boleta') {
                 if (!$config->emite_boletas) {
+                    DB::rollBack();
                     return response()->json([
                         'success' => false,
                         'message' => 'La emisión de boletas no está habilitada'
@@ -167,6 +170,7 @@ class ComprobanteController extends Controller
                 $config->increment('numero_actual_boleta');
             } elseif ($request->tipo === 'factura') {
                 if (!$config->emite_facturas) {
+                    DB::rollBack();
                     return response()->json([
                         'success' => false,
                         'message' => 'La emisión de facturas no está habilitada'
@@ -175,10 +179,6 @@ class ComprobanteController extends Controller
                 $serie = $config->serie_factura;
                 $numero = $config->numero_actual_factura + 1;
                 $config->increment('numero_actual_factura');
-            } else {
-                // Tipo "ninguno" - no lleva serie ni número
-                $serie = null;
-                $numero = null;
             }
 
             // Crear el comprobante

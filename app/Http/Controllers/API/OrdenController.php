@@ -146,18 +146,21 @@ class OrdenController extends Controller
                 }
             }
 
+            $productosIds = collect($request->productos)->pluck('producto_id');
+            $productos = Producto::whereIn('id', $productosIds)->get()->keyBy('id');
+
             // Calcular totales
             $subtotal = 0;
             $productosData = [];
 
             foreach ($request->productos as $item) {
-                $producto = Producto::find($item['producto_id']);
-                
-                if (!$producto->activo) {
+                $producto = $productos->get($item['producto_id']);
+
+                if (!$producto || !$producto->activo) {
                     DB::rollBack();
                     return response()->json([
                         'success' => false,
-                        'message' => "El producto {$producto->nombre} no está disponible"
+                        'message' => "El producto no está disponible"
                     ], 400);
                 }
 
@@ -288,16 +291,19 @@ class OrdenController extends Controller
                 ], 422);
             }
 
+            $productosIds = collect($request->productos)->pluck('producto_id');
+            $productos = Producto::whereIn('id', $productosIds)->get()->keyBy('id');
+
             $subtotalAdicional = 0;
 
             foreach ($request->productos as $item) {
-                $producto = Producto::find($item['producto_id']);
+                $producto = $productos->get($item['producto_id']);
 
-                if (!$producto->activo) {
+                if (!$producto || !$producto->activo) {
                     DB::rollBack();
                     return response()->json([
                         'success' => false,
-                        'message' => "El producto {$producto->nombre} no está disponible"
+                        'message' => "El producto no está disponible"
                     ], 400);
                 }
 

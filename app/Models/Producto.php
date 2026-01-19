@@ -25,6 +25,8 @@ class Producto extends Model{
         'activo'
     ];
 
+    protected $appends = ['imagen_url'];
+
     protected function casts(): array
     {
         return [
@@ -34,6 +36,12 @@ class Producto extends Model{
             'stock_minimo' => 'integer',
             'activo' => 'boolean'
         ];
+    }
+
+    // Accessor para URL de imagen
+    public function getImagenUrlAttribute()
+    {
+        return $this->imagen ? url('storage/' . $this->imagen) : null;
     }
 
     /// Relacion

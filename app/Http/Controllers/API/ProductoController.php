@@ -43,16 +43,6 @@ class ProductoController extends Controller
 
             $productos = $query->orderBy('nombre', 'asc')->get();
 
-            // Agregar URL completa de la imagen
-            $productos->transform(function ($producto) {
-                if ($producto->imagen) {
-                    $producto->imagen_url = url('storage/' . $producto->imagen);
-                } else {
-                    $producto->imagen_url = null;
-                }
-                return $producto;
-            });
-
             return response()->json([
                 'success' => true,
                 'productos' => $productos
@@ -81,11 +71,6 @@ class ProductoController extends Controller
                     'success' => false,
                     'message' => 'Producto no encontrado'
                 ], 404);
-            }
-
-            // Agregar URL completa de la imagen
-            if ($producto->imagen) {
-                $producto->imagen_url = url('storage/' . $producto->imagen);
             }
 
             return response()->json([
@@ -163,11 +148,6 @@ class ProductoController extends Controller
             ]);
 
             $producto->load('categoria');
-
-            // Agregar URL de imagen
-            if ($producto->imagen) {
-                $producto->imagen_url = url('storage/' . $producto->imagen);
-            }
 
             return response()->json([
                 'success' => true,
@@ -257,11 +237,6 @@ class ProductoController extends Controller
             ]);
 
             $producto->load('categoria');
-
-            // Agregar URL de imagen
-            if ($producto->imagen) {
-                $producto->imagen_url = url('storage/' . $producto->imagen);
-            }
 
             return response()->json([
                 'success' => true,
@@ -376,14 +351,6 @@ class ProductoController extends Controller
                 ->where('activo', true)
                 ->with('categoria')
                 ->get();
-
-            // Agregar URLs de imágenes
-            $productos->transform(function ($producto) {
-                if ($producto->imagen) {
-                    $producto->imagen_url = url('storage/' . $producto->imagen);
-                }
-                return $producto;
-            });
 
             return response()->json([
                 'success' => true,
