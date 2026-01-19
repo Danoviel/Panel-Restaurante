@@ -3,14 +3,15 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\Orden;
 use App\Models\DetalleOrden;
 use App\Models\Mesa;
+use App\Models\Orden;
 use App\Models\Producto;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class OrdenController extends Controller
 {
@@ -18,20 +19,34 @@ class OrdenController extends Controller
     public function index(Request $request)
     {
         try {
+            // Validar parámetros de filtro
+            $validator = Validator::make($request->all(), [
+                'estado' => 'nullable|in:pendiente,en_preparacion,servido,pagado,cancelado',
+                'fecha' => 'nullable|date',
+                'todas' => 'nullable|boolean'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
             $query = Orden::with(['mesa', 'usuario', 'detalles.producto']);
 
             // Filtrar por estado
-            if ($request->has('estado')) {
+            if ($request->filled('estado')) {
                 $query->where('estado', $request->estado);
             }
 
             // Filtrar por fecha
-            if ($request->has('fecha')) {
+            if ($request->filled('fecha')) {
                 $query->whereDate('created_at', $request->fecha);
             }
 
             // Órdenes del día por defecto
-            if (!$request->has('fecha') && !$request->has('todas')) {
+            if (!$request->filled('fecha') && !$request->has('todas')) {
                 $query->whereDate('created_at', today());
             }
 
@@ -42,10 +57,14 @@ class OrdenController extends Controller
                 'ordenes' => $ordenes
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener órdenes', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener órdenes',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener órdenes'
             ], 500);
         }
     }
@@ -70,10 +89,15 @@ class OrdenController extends Controller
                 'orden' => $orden
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener orden', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'orden_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener orden',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener orden'
             ], 500);
         }
     }
@@ -214,10 +238,15 @@ class OrdenController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error al crear orden', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'user_id' => Auth::id()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear orden',
-                'error' => $e->getMessage()
+                'message' => 'Error al crear orden'
             ], 500);
         }
     }
@@ -325,10 +354,15 @@ class OrdenController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error al agregar productos a orden', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'orden_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al agregar productos',
-                'error' => $e->getMessage()
+                'message' => 'Error al agregar productos'
             ], 500);
         }
     }
@@ -377,10 +411,15 @@ class OrdenController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error al cambiar estado de orden', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'orden_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al cambiar estado',
-                'error' => $e->getMessage()
+                'message' => 'Error al cambiar estado'
             ], 500);
         }
     }
@@ -432,10 +471,15 @@ class OrdenController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error al cancelar orden', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'orden_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al cancelar orden',
-                'error' => $e->getMessage()
+                'message' => 'Error al cancelar orden'
             ], 500);
         }
     }
@@ -456,10 +500,14 @@ class OrdenController extends Controller
                 'total' => $ordenes->count()
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener órdenes activas', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener órdenes activas',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener órdenes activas'
             ], 500);
         }
     }
@@ -482,10 +530,14 @@ class OrdenController extends Controller
                 'ordenes' => $ordenes
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener órdenes de cocina', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener órdenes de cocina',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener órdenes de cocina'
             ], 500);
         }
     }

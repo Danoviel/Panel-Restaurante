@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class CategoriaController extends Controller
@@ -23,10 +24,14 @@ class CategoriaController extends Controller
                 'categorias' => $categorias
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener categorías', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener categorías',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener categorías'
             ], 500);
         }
     }
@@ -63,10 +68,14 @@ class CategoriaController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
+            Log::error('Error al crear categoría', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear categoría',
-                'error' => $e->getMessage()
+                'message' => 'Error al crear categoría'
             ], 500);
         }
     }
@@ -90,10 +99,14 @@ class CategoriaController extends Controller
                 'categoria' => $categoria
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener categoría', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener categoría',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener categoría'
             ], 500);
         }
     }
@@ -140,10 +153,14 @@ class CategoriaController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error al actualizar categoría', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar categoría',
-                'error' => $e->getMessage()
+                'message' => 'Error al actualizar categoría'
             ], 500);
         }
     }
@@ -181,10 +198,14 @@ class CategoriaController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error al eliminar categoría', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar categoría',
-                'error' => $e->getMessage()
+                'message' => 'Error al eliminar categoría'
             ], 500);
         }
     }
@@ -206,10 +227,14 @@ class CategoriaController extends Controller
                 'categorias' => $categorias
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener categorías con productos', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener categorías con productos',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener categorías con productos'
             ], 500);
         }
     }

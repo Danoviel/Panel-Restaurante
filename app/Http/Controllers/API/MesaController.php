@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Mesa;
 use App\Models\Orden;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 
@@ -15,15 +16,28 @@ class MesaController extends Controller
     public function index(Request $request)
     {
         try {
+            // Validar parámetros de filtro
+            $validator = Validator::make($request->all(), [
+                'estado' => 'nullable|in:libre,ocupada,reservada,mantenimiento',
+                'ubicacion' => 'nullable|string|max:50'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
             $query = Mesa::query();
 
             // Filtrar por estado si viene el parámetro
-            if ($request->has('estado')) {
+            if ($request->filled('estado')) {
                 $query->where('estado', $request->estado);
             }
 
             // Filtrar por ubicación
-            if ($request->has('ubicacion')) {
+            if ($request->filled('ubicacion')) {
                 $query->where('ubicacion', $request->ubicacion);
             }
 
@@ -39,10 +53,14 @@ class MesaController extends Controller
                 'mesas' => $mesas
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener mesas', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener mesas',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener mesas'
             ], 500);
         }
     }
@@ -79,10 +97,14 @@ class MesaController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
+            Log::error('Error al crear mesa', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear mesa',
-                'error' => $e->getMessage()
+                'message' => 'Error al crear mesa'
             ], 500);
         }
     }
@@ -107,10 +129,15 @@ class MesaController extends Controller
                 'mesa' => $mesa
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener mesa', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'mesa_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener mesa',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener mesa'
             ], 500);
         }
     }
@@ -156,10 +183,15 @@ class MesaController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error al actualizar mesa', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'mesa_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar mesa',
-                'error' => $e->getMessage()
+                'message' => 'Error al actualizar mesa'
             ], 500);
         }
     }
@@ -203,10 +235,15 @@ class MesaController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error al eliminar mesa', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'mesa_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar mesa',
-                'error' => $e->getMessage()
+                'message' => 'Error al eliminar mesa'
             ], 500);
         }
     }
@@ -247,10 +284,15 @@ class MesaController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error al cambiar estado de mesa', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'mesa_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al cambiar estado',
-                'error' => $e->getMessage()
+                'message' => 'Error al cambiar estado'
             ], 500);
         }
     }
@@ -270,10 +312,14 @@ class MesaController extends Controller
                 'total' => $mesas->count()
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener mesas libres', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener mesas libres',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener mesas libres'
             ], 500);
         }
     }
@@ -296,10 +342,14 @@ class MesaController extends Controller
                 'total' => $mesas->count()
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener mesas ocupadas', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener mesas ocupadas',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener mesas ocupadas'
             ], 500);
         }
     }
@@ -327,10 +377,14 @@ class MesaController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener resumen de mesas', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener resumen',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener resumen'
             ], 500);
         }
     }

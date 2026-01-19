@@ -20,7 +20,8 @@ Route::get('test', function() {
 
 ///RUTAS PÚBLICAS (sin autenticación)
 Route::prefix('auth')->group(function () {
-    Route::post('login', [AuthController::class, 'login']);
+    // Rate limiting: 5 intentos por minuto para prevenir ataques de fuerza bruta
+    Route::post('login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 });
 
 ///RUTAS PROTEGIDAS (con autenticación)

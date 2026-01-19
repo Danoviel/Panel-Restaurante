@@ -6,9 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Caja;
 use App\Models\Comprobante;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class CajaController extends Controller
 {
@@ -44,10 +45,15 @@ class CajaController extends Controller
                 'caja' => $caja
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener caja actual', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'user_id' => Auth::id()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener caja actual',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener caja actual'
             ], 500);
         }
     }
@@ -96,10 +102,15 @@ class CajaController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
+            Log::error('Error al abrir caja', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'user_id' => Auth::id()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al abrir caja',
-                'error' => $e->getMessage()
+                'message' => 'Error al abrir caja'
             ], 500);
         }
     }
@@ -183,10 +194,16 @@ class CajaController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error al cerrar caja', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'user_id' => Auth::id(),
+                'caja_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al cerrar caja',
-                'error' => $e->getMessage()
+                'message' => 'Error al cerrar caja'
             ], 500);
         }
     }
@@ -195,6 +212,20 @@ class CajaController extends Controller
     public function historial(Request $request)
     {
         try {
+            // Validar parámetros de filtro
+            $validator = Validator::make($request->all(), [
+                'fecha_desde' => 'nullable|date',
+                'fecha_hasta' => 'nullable|date|after_or_equal:fecha_desde',
+                'estado' => 'nullable|in:abierta,cerrada'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
             $query = Caja::with('usuario');
 
             // Filtrar por usuario (solo admin puede ver todas)
@@ -203,16 +234,16 @@ class CajaController extends Controller
             }
 
             // Filtrar por fecha
-            if ($request->has('fecha_desde')) {
+            if ($request->filled('fecha_desde')) {
                 $query->whereDate('fecha_apertura', '>=', $request->fecha_desde);
             }
 
-            if ($request->has('fecha_hasta')) {
+            if ($request->filled('fecha_hasta')) {
                 $query->whereDate('fecha_apertura', '<=', $request->fecha_hasta);
             }
 
             // Filtrar por estado
-            if ($request->has('estado')) {
+            if ($request->filled('estado')) {
                 $query->where('estado', $request->estado);
             }
 
@@ -223,10 +254,15 @@ class CajaController extends Controller
                 'cajas' => $cajas
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener historial de cajas', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'user_id' => Auth::id()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener historial',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener historial'
             ], 500);
         }
     }
@@ -277,10 +313,16 @@ class CajaController extends Controller
                 'caja' => $caja
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener caja', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'user_id' => Auth::id(),
+                'caja_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener caja',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener caja'
             ], 500);
         }
     }

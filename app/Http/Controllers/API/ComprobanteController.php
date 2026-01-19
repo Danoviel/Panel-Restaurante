@@ -4,11 +4,12 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Comprobante;
-use App\Models\Orden;
 use App\Models\ConfiguracionNegocio;
+use App\Models\Orden;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class ComprobanteController extends Controller
 {
@@ -16,15 +17,29 @@ class ComprobanteController extends Controller
     public function index(Request $request)
     {
         try {
+            // Validar parámetros de filtro
+            $validator = Validator::make($request->all(), [
+                'tipo' => 'nullable|in:boleta,factura,ninguno',
+                'fecha' => 'nullable|date',
+                'metodo_pago' => 'nullable|in:efectivo,tarjeta,yape,plin,transferencia'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
             $query = Comprobante::with('orden.mesa')->where('estado', 'emitido');
 
             // Filtrar por tipo
-            if ($request->has('tipo')) {
+            if ($request->filled('tipo')) {
                 $query->where('tipo', $request->tipo);
             }
 
             // Filtrar por fecha
-            if ($request->has('fecha')) {
+            if ($request->filled('fecha')) {
                 $query->whereDate('created_at', $request->fecha);
             } else {
                 // Por defecto, comprobantes del día
@@ -32,7 +47,7 @@ class ComprobanteController extends Controller
             }
 
             // Filtrar por método de pago
-            if ($request->has('metodo_pago')) {
+            if ($request->filled('metodo_pago')) {
                 $query->where('metodo_pago', $request->metodo_pago);
             }
 
@@ -43,10 +58,14 @@ class ComprobanteController extends Controller
                 'comprobantes' => $comprobantes
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener comprobantes', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener comprobantes',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener comprobantes'
             ], 500);
         }
     }
@@ -69,10 +88,15 @@ class ComprobanteController extends Controller
                 'comprobante' => $comprobante
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener comprobante', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'comprobante_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener comprobante',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener comprobante'
             ], 500);
         }
     }
@@ -196,10 +220,15 @@ class ComprobanteController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error al generar comprobante', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'orden_id' => $request->orden_id ?? null
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al generar comprobante',
-                'error' => $e->getMessage()
+                'message' => 'Error al generar comprobante'
             ], 500);
         }
     }
@@ -253,10 +282,15 @@ class ComprobanteController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error al anular comprobante', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'comprobante_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al anular comprobante',
-                'error' => $e->getMessage()
+                'message' => 'Error al anular comprobante'
             ], 500);
         }
     }
@@ -311,10 +345,14 @@ class ComprobanteController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener resumen del día', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener resumen',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener resumen'
             ], 500);
         }
     }

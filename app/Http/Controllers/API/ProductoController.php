@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\Producto;
 use App\Models\Categoria;
+use App\Models\Producto;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class ProductoController extends Controller
 {
@@ -15,15 +16,28 @@ class ProductoController extends Controller
     public function index(Request $request)
     {
         try {
+            // Validar parámetros de filtro
+            $validator = Validator::make($request->all(), [
+                'categoria_id' => 'nullable|integer|exists:categorias,id',
+                'tipo_producto' => 'nullable|in:preparado,comprado'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
             $query = Producto::with('categoria')->where('activo', true);
 
             // Filtrar por categoría
-            if ($request->has('categoria_id')) {
+            if ($request->filled('categoria_id')) {
                 $query->where('categoria_id', $request->categoria_id);
             }
 
             // Filtrar por tipo de producto
-            if ($request->has('tipo_producto')) {
+            if ($request->filled('tipo_producto')) {
                 $query->where('tipo_producto', $request->tipo_producto);
             }
 
@@ -44,10 +58,14 @@ class ProductoController extends Controller
                 'productos' => $productos
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener productos', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener productos',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener productos'
             ], 500);
         }
     }
@@ -75,10 +93,15 @@ class ProductoController extends Controller
                 'producto' => $producto
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener producto', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'producto_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener producto',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener producto'
             ], 500);
         }
     }
@@ -153,10 +176,14 @@ class ProductoController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
+            Log::error('Error al crear producto', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al crear producto',
-                'error' => $e->getMessage()
+                'message' => 'Error al crear producto'
             ], 500);
         }
     }
@@ -243,10 +270,15 @@ class ProductoController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error al actualizar producto', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'producto_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar producto',
-                'error' => $e->getMessage()
+                'message' => 'Error al actualizar producto'
             ], 500);
         }
     }
@@ -275,10 +307,15 @@ class ProductoController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error al eliminar imagen de producto', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'producto_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar imagen',
-                'error' => $e->getMessage()
+                'message' => 'Error al eliminar imagen'
             ], 500);
         }
     }
@@ -316,10 +353,15 @@ class ProductoController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error al eliminar producto', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'producto_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar producto',
-                'error' => $e->getMessage()
+                'message' => 'Error al eliminar producto'
             ], 500);
         }
     }
@@ -349,10 +391,14 @@ class ProductoController extends Controller
                 'total' => $productos->count()
             ]);
         } catch (\Exception $e) {
+            Log::error('Error al obtener productos con stock bajo', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener productos con stock bajo',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener productos con stock bajo'
             ], 500);
         }
     }
@@ -399,10 +445,15 @@ class ProductoController extends Controller
             ]);
                                                        
         } catch (\Exception $e) {
+            Log::error('Error al actualizar stock', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'producto_id' => $id
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar stock',
-                'error' => $e->getMessage()
+                'message' => 'Error al actualizar stock'
             ], 500);
         }
     }                                           
